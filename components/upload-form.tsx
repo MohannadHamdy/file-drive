@@ -14,42 +14,37 @@ import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-
 import { Input } from "@/components/ui/input";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { useOrganization, useUser } from "@clerk/nextjs";
 import { useState } from "react";
 import { useToast } from "./ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { uploadFile } from "@/app/actions/file-actions";
+import { SubmitButton } from "./submit-button";
 
 export const UploadBtn = () => {
   const [isFileDialogOpen, setIsFileDialogOpen] = useState(false);
   let orgId = null;
-  const createFile = useMutation(api.files.createFile);
   const organization = useOrganization();
   const user = useUser();
   if (organization.isLoaded && user.isLoaded) {
     orgId = organization.organization?.id ?? user.user?.id;
   }
-  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   const { toast } = useToast();
 
   const formSchema = z.object({
     title: z
       .string()
       .min(2, {
-        message: "Username must be at least 2 characters.",
+        message: "Title must be at least 2 characters.",
       })
       .max(100, {
-        message: "Username must be at most 100 characters.",
+        message: "Title must be at most 100 characters.",
       }),
     file: z
       .custom<FileList>((val) => val instanceof FileList, "Required")
@@ -66,36 +61,27 @@ export const UploadBtn = () => {
 
   const fileRef = form.register("file");
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+  const onSubmit = async (formData: FormData) => {
+    const { data, error } = await uploadFile(formData);
 
-    const postUrl = await generateUploadUrl();
-
-    const result = await fetch(postUrl, {
-      method: "POST",
-      headers: { "Content-Type": values.file[0]!.type },
-      body: values.file[0],
-    });
-
-    const { storageId } = await result.json();
-    if (!orgId) return;
-    try {
-      await createFile({ name: values.title, orgId, fileId: storageId });
-      form.reset();
-      setIsFileDialogOpen(false);
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
       toast({
         title: "File uploaded",
         description: "Your file has been uploaded successfully",
         variant: "success",
       });
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: "Error",
-        description: "An error occurred while uploading the file",
-        variant: "destructive",
-      });
+      form.reset();
+      setIsFileDialogOpen(false);
     }
+
+    console.log("data", data);
+    console.log("err", error);
   };
 
   return (
@@ -115,7 +101,11 @@ export const UploadBtn = () => {
           <DialogDescription>Select a file to be uploaded</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form
+            // onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-8"
+            action={onSubmit}
+          >
             <FormField
               control={form.control}
               name="title"
@@ -142,16 +132,7 @@ export const UploadBtn = () => {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting}
-              className="flex gap-1"
-            >
-              {form.formState.isSubmitting && (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              )}
-              Submit
-            </Button>
+            <SubmitButton />
           </form>
         </Form>
       </DialogContent>

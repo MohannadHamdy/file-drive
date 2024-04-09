@@ -1,7 +1,7 @@
+"use client";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -12,8 +12,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -29,12 +27,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DeleteIcon, MoreVertical, TrashIcon } from "lucide-react";
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { useToast } from "./ui/use-toast";
+import { deleteFile } from "@/app/actions/file-actions";
 
-const DropdownActions = ({ file }: { file: Doc<"files"> }) => {
-  const deleteFile = useMutation(api.files.deleteFile);
+const DropdownActions = ({
+  file,
+}: {
+  file: {
+    id: string;
+    title: string;
+    type: string;
+    file_name: string;
+  };
+}) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { toast } = useToast();
 
@@ -53,7 +58,7 @@ const DropdownActions = ({ file }: { file: Doc<"files"> }) => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                await deleteFile({ fileId: file._id });
+                await deleteFile(file.file_name);
                 toast({
                   title: "File Deleted",
                   description: "Your file has been successfully deleted",
@@ -83,12 +88,12 @@ const DropdownActions = ({ file }: { file: Doc<"files"> }) => {
   );
 };
 
-export default function FileCard({ file }: { file: Doc<"files"> }) {
+export default function FileCard({ file }: { file: any }) {
   return (
     <Card>
       <CardHeader className="relative">
         <CardTitle className="flex items-end justify-between">
-          {file.name}
+          {file.title}
         </CardTitle>
         <div className="absolute top-1 right-1">
           <DropdownActions file={file} />
