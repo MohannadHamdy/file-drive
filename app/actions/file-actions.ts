@@ -66,7 +66,8 @@ export async function deleteFile(file_name: string) {
   console.log("filepath", `files/${file_name}`);
   const { data: fileData, error: fileError } = await supabase.storage
     .from("files")
-    .remove([`files/${file_name}`]);
+    // .remove([`files/${file_name}`]);
+    .remove(["public/files/1712687698779_images.png"]);
   if (fileError) {
     console.log("fileError", fileError);
     return;
